@@ -40,18 +40,54 @@ export const useHRApplications = () => {
   const [error, setError] = useState<string | null>(null);
 
   const fetchApplications = async () => {
-    if (!user) return;
-    
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await supabase
-        .rpc('get_hr_applications_with_ats');
+      // Query the view directly. Some deployments may not have the RPC
+      // function `get_hr_applications_with_ats`, but the `hr_applications_view`
+      // should be available (as you queried manually).
+      const { data, error } = await (supabase as any)
+        .from('hr_applications_view')
+        .select('*')
+        .order('applied_at', { ascending: false });
 
       if (error) throw error;
 
-      setApplications(data || []);
+      const normalized = (data || []).map((row: any) => ({
+        application_id: row.application_id,
+        job_id: row.job_id,
+        user_id: row.user_id,
+        status: row.status,
+        applied_at: row.applied_at,
+        cover_letter: row.cover_letter ?? null,
+        ats_score: row.ats_score === null || row.ats_score === undefined ? null : Number(row.ats_score),
+        predicted_category: row.predicted_category ?? null,
+        confidence_score: row.confidence_score === null || row.confidence_score === undefined ? null : Number(row.confidence_score),
+        ats_calculated_at: row.ats_calculated_at ?? null,
+        job_title: row.job_title ?? '',
+        job_company: row.job_company ?? '',
+        job_location: row.job_location ?? '',
+        job_type: row.job_type ?? '',
+        job_salary: row.job_salary ?? null,
+        job_description: row.job_description ?? '',
+        first_name: row.first_name ?? '',
+        last_name: row.last_name ?? '',
+        email: row.email ?? null,
+        phone: row.phone ?? null,
+        applicant_company: row.applicant_company ?? null,
+        applicant_position: row.applicant_position ?? null,
+        resume_file_name: row.resume_file_name ?? null,
+        resume_file_path: row.resume_file_path ?? null,
+        resume_uploaded_at: row.resume_uploaded_at ?? null,
+      })) as ApplicationWithDetails[];
+
+      setApplications(normalized);
     } catch (err) {
       console.error('Error fetching applications:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
