@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-const ATS_API_URL = 'https://atsscore-production.up.railway.app';
+const ATS_API_URL = 'https://atsscore-production-1ce3.up.railway.app';
 
 export interface ApplicationWithDetails {
   application_id: string;
